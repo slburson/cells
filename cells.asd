@@ -13,7 +13,7 @@
   :long-description "Cells: a dataflow extension to CLOS."
   :version "3.0"
   :serial t
-  :depends-on (:utils-kt)
+  :depends-on (:utils-kt :fset)
   :components ((:file "defpackage")
                (:file "trc-eko")
                (:file "cells")

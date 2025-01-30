@@ -13,9 +13,7 @@
 
 (defun c-no-news (c new-value old-value)
   ;;; (trc nil "c-no-news > checking news between" newvalue oldvalue)
-  (bif (test (c-unchanged-test (c-model c) (c-slot-name c)))
-      (funcall test new-value old-value)
-      (eql new-value old-value)))
+  (funcall (c-unchanged-test (c-model c) (c-slot-name c)) new-value old-value))
 
 (defmacro def-c-unchanged-test ((class slotname) &body test)
   `(defmethod c-unchanged-test ((self ,class) (slotname (eql ',slotname)))
@@ -23,7 +21,7 @@
      
 (defmethod c-unchanged-test (self slotname)
   (declare (ignore self slotname))
-  nil)
+  #'fset:equal?)
 
 ; --- data pulse (change ID) management -------------------------------------
 
