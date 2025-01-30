@@ -24,7 +24,7 @@
 
 (defpackage :cells
   (:use #:common-lisp #:utils-kt)
-  (:nicknames :cz)
+  ;; (:nicknames :cz)
   (:import-from
    ;; MOP
    #+allegro #:excl
@@ -63,6 +63,7 @@
     #:fm-kid-containing #:fm-find-if #:fm-ascendant-if #:c-abs #:fm-collect-if #:psib
     #:not-to-be #:ssibno
     #:c-debug #:c-break #:c-assert #:c-stop #:c-stopped #:c-assert #:.stop    #:delta-diff
-    #:wtrc #:wnotrc #:eko-if #:trc #:wtrc #:eko #:ekx #:trcp #:trcx)
+    #:wtrc #:wnotrc #:eko-if #:trc #:wtrc #:eko #:ekx #:trcp #:trcx
+    #:c-envalue)
   #+allegro (:shadowing-import-from #:excl #:fasl-write #:fasl-read #:gc)
   )

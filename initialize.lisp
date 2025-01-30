@@ -11,9 +11,6 @@ Copyright (C) 1995, 2006 by Kenneth Tilton
 
 (in-package :cells)
 
-(eval-when (compile eval load)
-  (export '(c-envalue)))
-
 (defstruct (c-envaluer (:conc-name nil))
   envalue-rule)
 
