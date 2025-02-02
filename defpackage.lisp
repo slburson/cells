@@ -51,7 +51,8 @@
    )
   (:export #:cell #:.md-name 
     #:c-input #:c-in #:c-in8
-    #:c-formula #:c? #:c_? #:c?8 #:c?_ #:c??
+    #:c-formula #:c? #:c_? #:c?8 #:c?_ #:c?? #:c?n-dbg
+    #:make-input-cell #:make-computed-cell
     #:with-integrity #:without-c-dependency #:self #:*parent*
     #:.cache #:.with-c-cache #:c-lambda
     #:defmodel #:defmd #:defobserver #:slot-value-observe #:def-c-unchanged-test
@@ -64,6 +65,6 @@
     #:not-to-be #:ssibno
     #:c-debug #:c-break #:c-assert #:c-stop #:c-stopped #:c-assert #:.stop    #:delta-diff
     #:wtrc #:wnotrc #:eko-if #:trc #:wtrc #:eko #:ekx #:trcp #:trcx
-    #:c-envalue)
+    #:c-envalue #:c-value-incf)
   #+allegro (:shadowing-import-from #:excl #:fasl-write #:fasl-read #:gc)
   )

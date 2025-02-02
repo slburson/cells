@@ -43,9 +43,6 @@
     (c-drifter (c-value-incf c (c-value c) value))
     (t value)))
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-    (export '(c-value-incf)))
-
 (defmethod c-value-incf (c (envaluer c-envaluer) delta)
   (c-assert (c-model c))
   (c-value-incf c (funcall (envalue-rule envaluer) c)

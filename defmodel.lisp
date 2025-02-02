@@ -8,7 +8,17 @@
 |#
 
 (in-package :cells)
+
 (defmacro defmodel (class directsupers slotspecs &rest options)
+  "Defines a model class.  Upwardly compatible with `defclass'.  Accepts the
+additional slot option `:cell', whose value can be `t', `nil', or `:ephemeral';
+the default is `t', indicating that the slot will be involved in constraint
+propagation.  If `nil', the slot can never be involved in propagation; if
+`:ephemeral', it is involved, but is reset to `nil' once each propagation
+pass is complete.
+
+For every cell slot's accessor, `defmodel' creates a macro `^accessor-name'
+that expands to `(accessor-name self)'."
   ;;(print `(defmodel sees directsupers ,directsupers using ,(or directsupers :model-object)))
   (assert (not (find class directsupers))() "~a cannot be its own superclass" class)
   `(progn

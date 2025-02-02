@@ -13,9 +13,7 @@
 
 (defun c-no-news (c new-value old-value)
   ;;; (trc nil "c-no-news > checking news between" newvalue oldvalue)
-  (bif (test (c-unchanged-test (c-model c) (c-slot-name c)))
-      (funcall test new-value old-value)
-      (eql new-value old-value)))
+  (funcall (c-unchanged-test (c-model c) (c-slot-name c)) new-value old-value))
 
 (defmacro def-c-unchanged-test ((class slotname) &body test)
   `(defmethod c-unchanged-test ((self ,class) (slotname (eql ',slotname)))
@@ -23,7 +21,7 @@
      
 (defmethod c-unchanged-test (self slotname)
   (declare (ignore self slotname))
-  nil)
+  #'eql)
 
 ; --- data pulse (change ID) management -------------------------------------
 
@@ -149,6 +147,26 @@
 ; --- slot change -----------------------------------------------------------
 
 (defmacro defobserver (slotname &rest args &aux (aroundp (eq :around (first args))))
+  "This macro can be invoked as
+
+    (defobserver slotname [:around]
+                          &optional (self-arg 'self) (new-varg 'new-value)
+                          (oldvarg 'old-value) (oldvargboundp 'old-value-boundp)
+                          (cell-arg 'c) &rest body)
+
+It defines an observer method that is called whenever a slot of name `slotname'
+is updated to a new value (according to `c-unchanged-test').  The definition may
+specify the class containing the desired slot by qualifying `self-arg', e.g.:
+
+    (defobserver location ((self player)) ...)
+
+The parameters not provided in an invocation are defaulted as shown above, e.g.,
+`new-value' will be bound around the body to the new value of the cell, etc.
+
+Generates a primary method unless `:around' is supplied.  The generic function
+is `slot-value-observe', which has `progn' method combination; if multiple
+primary methods apply when the GF is called, they are all run, most specific
+last."
   (when aroundp (setf args (cdr args)))
 
   #+irritating

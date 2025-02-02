@@ -30,7 +30,7 @@
   (pulse-last-changed 0 :type fixnum) ;; lazys can miss changes by missing change of X followed by unchange of X in subsequent DP
   (pulse-observed 0 :type fixnum)
   lazy
-  (optimize t)
+  (optimize t) ; no longer used
   debug
   md-info)
 

@@ -47,13 +47,68 @@
 
 ;-----------------------------------------
 
+(defmacro make-input-cell (&key (initial-value nil initial-value-p) debug)
+  "Makes a settable, non-recomputed cell, optionally initialized to
+`initial-value'.  (If not initialized, the cell is unbound, and an attempt
+to read it before setting it will fail.)  If `debug' is true, debug tracing
+of the cell will be possible."
+  `(make-cell :inputp t
+	      ,@(if initial-value-p `(:value ,initial-value :value-state ':valid)
+		  '(:value-state ':unbound))
+	      :debug ,debug))
+
+(defmacro make-computed-cell ((&key settable (auto-update t) lazy debug)
+			      &body body)
+  "Makes a computed cell.  If `settable' is true, the value can be set
+explicitly.  If `auto-update' is true (the default), the cell's value will be
+recomputed automatically when the values of referenced cells change.  `lazy'
+controls when the updates occur; it can be one of `nil', `t' or `:always',
+`:once-asked', or `:until-asked':
+
+   `nil': the cell is updated eagerly, as soon as referenced cells change
+   `t' / `:always': the cell is updated only when read and referenced
+          values have changed
+   `:once-asked': like `:always' except that the cell's initial value is
+          computed eagerly
+   `:until-asked': the cell is not updated until it is first read, at
+          which point it becomes eager
+
+If `debug' is true, debug tracing of the cell will be possible.
+`body' is an implicit `progn'; `self' is bound, around it, to the object
+whose slot contains the cell."
+  (assert (member lazy '(nil t :once-asked :until-asked :always)))
+  (let ((args `(:inputp ,settable :lazy ,lazy :debug ,debug :value-state ':unevaluated)))
+    (cond ((eq auto-update t)
+	   `(make-c-dependent ,@args
+			      :code ',body
+			      :rule (c-lambda . ,body)))
+	  ((eq auto-update nil)
+	   `(make-c-dependent ,@args
+			      :code '((without-c-dependency . ,body))
+			      :rule (c-lambda (without-c-dependency . ,body))))
+	  (t
+	   ;; Have to defer the choice to runtime.
+	   (let ((au-var (gensym "AUTO-UPDATE-")))
+	     `(let ((,au-var ,auto-update))
+		(make-c-dependent ,@args
+				  :code (if ,au-var ',body
+					  '((without-c-dependency . ,body)))
+				  :rule (if ,au-var (c-lambda . ,body)
+					  (c-lambda (without-c-dependency . ,body))))))))))
+
 (defmacro c? (&body body)
+  "Makes a non-settable cell initialized to the value of `body'.  If `body'
+references other cells, it will be recomputed whenever the values of those cells
+change.  Binds `self', around `body', to the object whose slot contains the cell."
   `(make-c-dependent
     :code ',body
     :value-state :unevaluated
     :rule (c-lambda ,@body)))
 
 (defmacro c?+n (&body body)
+  "Makes a settable cell initialized to the value of `body'.  If `body' references
+other cells, it will be recomputed whenever the values of those cells change.
+Binds `self', around `body', to the object whose slot contains the cell."
   `(make-c-dependent
     :inputp t
     :code ',body
@@ -61,15 +116,19 @@
     :rule (c-lambda ,@body)))
 
 (defmacro c?n (&body body)
+  "Makes a settable cell initialized to the value of `body'.  Does NOT recompute
+`body' when its referenced cells change.  Binds `self', around `body', to the
+object whose slot contains the cell."
   `(make-c-dependent
     :code '(without-c-dependency ,@body)
     :inputp t
     :value-state :unevaluated
     :rule (c-lambda (without-c-dependency ,@body))))
 
-(export! c?n-dbg)
-
 (defmacro c?n-dbg (&body body)
+  "Makes a settable cell initialized to the value of `body', with debug tracing
+enabled.  Does NOT recompute `body' when its referenced cells change.  Binds
+`self', around `body', to the object whose slot contains the cell."
   `(make-c-dependent
     :code '(without-c-dependency ,@body)
     :inputp t
@@ -87,6 +146,9 @@
     ,@args))
 
 (defmacro c?once (&body body)
+  "Makes a non-settable cell initialized to the value of `body'.  Does NOT
+recompute `body' when its referenced cells change.  Binds `self', around `body',
+to the object whose slot contains the cell."
   `(make-c-dependent
     :code '(without-c-dependency ,@body)
     :inputp nil
@@ -94,6 +156,10 @@
     :rule (c-lambda (without-c-dependency ,@body))))
 
 (defmacro c_1 (&body body)
+  "Makes a non-settable, fully lazy cell that will be initialized to the value
+of `body' when it is first read.  Does NOT recompute `body' when its referenced
+cells change.  Binds `self', around `body', to the object whose slot contains
+the cell."
   `(make-c-dependent
     :code '(without-c-dependency ,@body)
     :inputp nil
@@ -102,6 +168,9 @@
     :rule (c-lambda (without-c-dependency ,@body))))
 
 (defmacro c?1 (&body body)
+  "Makes a non-settable cell initialized to the value of `body'.  Does NOT
+recompute `body' when its referenced cells change.  Binds `self', around `body',
+to the object whose slot contains the cell."
   `(c?once ,@body))
 
 (defmacro c?dbg (&body body)
@@ -112,6 +181,10 @@
     :rule (c-lambda ,@body)))
 
 (defmacro c?_ (&body body)
+  "Makes a non-settable, fully lazy cell that will be initialized to the value
+of `body' when it is first read.  If `body' references other cells, it will be
+recomputed whenever it is referenced and the values of those cells have changed.
+Binds `self', around `body', to the object whose slot contains the cell."
   `(make-c-dependent
     :code ',body
     :value-state :unevaluated
@@ -119,6 +192,10 @@
     :rule (c-lambda ,@body)))
 
 (defmacro c_? (&body body)
+  "Makes a non-settable, lazy-until-asked cell initialized to the value of `body'.  If
+`body' references other cells, it will be recomputed after it has first been
+read, whenever the values of those cells change.  Binds `self', around `body',
+to the object whose slot contains the cell."
   "Lazy until asked, then eagerly propagating"
   `(make-c-dependent
     :code ',body
@@ -154,6 +231,22 @@
                   ,result))))))
 
 (defmacro c-formula ((&rest keys &key lazy &allow-other-keys) &body forms)
+  "Makes a cell initialized to the value of `forms'.  If `forms' references
+other cells, it will be recomputed whenever the values of those cells change.
+Binds `self', around `forms', to the object whose slot contains the cell.
+`lazy' controls when updates occur; it can be one of `nil', `t' or `:always',
+`:once-asked', or `:until-asked':
+
+   `nil': the cell is updated eagerly, as soon as referenced cells change
+   `t' / `:always': the cell is updated only when read and referenced
+          values have changed
+   `:once-asked': like `:always' except that the cell's initial value is
+          computed eagerly
+   `:until-asked': the cell is not updated until it is first read, at
+          which point it becomes eager
+
+`keys' may contain other keyword arguments accepted by `make-c-dependent',
+such as `debug'."
   (assert (member lazy '(nil t :once-asked :until-asked :always)))
   `(make-c-dependent
     :code ',forms
@@ -162,6 +255,9 @@
     ,@keys))
 
 (defmacro c-input ((&rest keys) &optional (value nil valued-p))
+  "Makes a settable cell, initialized to `value' if supplied.  (If it's not
+supplied, the cell is unbound until set.)  `keys' can contain additional options
+to pass to `make-cell', such as `:lazy'."
   `(make-cell
     :inputp t
     :value-state ,(if valued-p :valid :unbound)
@@ -169,6 +265,7 @@
     ,@keys))
 
 (defmacro c-in (value)
+  "Makes a settable cell, initialized to `value'."
   `(make-cell
     :inputp t
     :value-state :valid
@@ -190,6 +287,7 @@
     :value ,value))
 
 (defmacro c... ((value) &body body)
+  "Makes a drifter cell initialized to `value'.  `body'"
   `(make-c-drifter
     :code ',body
     :value-state :valid

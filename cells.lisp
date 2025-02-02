@@ -180,8 +180,8 @@ a cellular slot (or in a list in such) and then mop those up on not-to-be.
 
 (defvar *call-stack* nil)
 (defvar *depender* nil)
-;; 2008-03-15: *depender* let's us differentiate between the call stack and
-;; and dependency. The problem with overloading *call-stack* with both roles
+;; 2008-03-15: *depender* lets us differentiate between the call stack and
+;; a dependency. The problem with overloading *call-stack* with both roles
 ;; is that we miss cyclic reentrance when we use without-c-dependency in a 
 ;; rule to get "once" behavior or just when fm-traversing to find someone
 
@@ -195,6 +195,9 @@ a cellular slot (or in a list in such) and then mop those up on not-to-be.
           `t))))
 
 (defmacro without-c-dependency (&body body)
+  "Executes `body' without tracking dependencies.  That is, if this form occurs
+within the computation of a cell value, subsequent updates to cells referenced
+within `body' do not cause the current cell to be updated."
   ` (let (*depender*)
       ,@body))
 

@@ -25,6 +25,9 @@
                                  :post-change))
 
 (defmacro with-integrity ((&optional opcode defer-info debug) &rest body)
+  "Defers the execution of `body' until the system is in a consistent state.
+`opcode' may be supplied to specify exactly which type of consistency is
+requested.  [&&& Sorry, haven't puzzled out the details.]"
   (declare (ignorable debug))
   (when opcode
     (assert (find opcode *ufb-opcodes*) ()
