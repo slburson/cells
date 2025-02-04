@@ -38,8 +38,7 @@ that expands to `(accessor-name self)'."
                   &allow-other-keys)
                 slotspec
               (declare (ignorable slotargs))
-              (when cell
-                (setf (md-slot-cell-type ',class slotname) cell))))
+              (setf (md-slot-cell-type ',class slotname) cell)))
      ;; define slot macros before class so they can appear in
      ;; initforms and default-initargs 
      ,@(loop for slotspec in slotspecs
