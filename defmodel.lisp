@@ -20,7 +20,7 @@ pass is complete.
 For every cell slot's accessor, `defmodel' creates a macro `^accessor-name'
 that expands to `(accessor-name self)'."
   ;;(print `(defmodel sees directsupers ,directsupers using ,(or directsupers :model-object)))
-  (assert (not (find class directsupers))() "~a cannot be its own superclass" class)
+  (assert (not (find class directsupers)) () "~a cannot be its own superclass" class)
   `(progn
      (setf (get ',class :cell-types) nil)
      
@@ -63,7 +63,7 @@ that expands to `(accessor-name self)'."
      ; -------  defclass ---------------  (^slot-value ,model ',',slotname)
      ;
      (progn
-         (defclass ,class ,(or directsupers '(model-object)) ;; now we can def the class
+         (defclass ,class ,(append directsupers '(model-object)) ;; now we can def the class
            ,(mapcar (lambda (s)
                       (list* (car s)
                         (let ((ias (cdr s)))
@@ -77,7 +77,8 @@ that expands to `(accessor-name self)'."
                           (remf ias :cell)
                           (remf ias :owning)
                           (remf ias :unchanged-if)
-                          ias))) (mapcar #'copy-list slotspecs))
+                          ias)))
+		    (mapcar #'copy-list slotspecs))
            (:documentation
             ,@(or (cdr (find :documentation options :key #'car))
                 '("chya")))
@@ -85,15 +86,7 @@ that expands to `(accessor-name self)'."
                ,@(cdr (find :default-initargs options :key #'car)))
            (:metaclass ,(or (cadr (find :metaclass options :key #'car))
                           'standard-class)))
-       
-       (defmethod shared-initialize :after ((self ,class) slot-names &rest iargs &key)
-         (declare (ignore slot-names iargs))
-         ,(when (and directsupers (not (member 'model-object directsupers)))
-            `(unless (typep self 'model-object)
-               (error "If no superclass of ~a inherits directly
-or indirectly from model-object, model-object must be included as a direct super-class in
-the defmodel form for ~a" ',class ',class))))
-       
+
        ;
        ; slot accessors once class is defined...
        ;
